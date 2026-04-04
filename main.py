@@ -57,8 +57,8 @@ PERSONNEL = ["유하", "홍옥", "공동"]
 
 
 @st.cache_resource
-def get_worksheet():
-    gc = gspread.service_account(filename='key.json')
+def get_worksheet():    
+    gc = gspread.service_account_from_dict(st.secrets["gcp_service_account"])
     sh = gc.open("PythonTest")
     return sh.get_worksheet(0)
 
