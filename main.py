@@ -12,8 +12,8 @@ from html import escape
 st.set_page_config(page_title="우리집 가계부", layout="wide")
 
 # --- [설정 정보] ---
-NOTION_TOKEN = "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".strip()
-DATABASE_ID = "1faa51bc9fb581398018e93c32bcc60a".strip()
+NOTION_TOKEN = st.secrets["NOTION_TOKEN"]
+DATABASE_ID = st.secrets["NOTION_DATABASE_ID"]
 
 CATEGORY_MAP = {
     "(지출)식비(외식, 배달)": "1faa51bc9fb58124b286f1634c5d1a97",
