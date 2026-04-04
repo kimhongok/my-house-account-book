@@ -15,41 +15,11 @@ st.set_page_config(page_title="우리집 가계부", layout="wide")
 NOTION_TOKEN = st.secrets["NOTION_TOKEN"]
 DATABASE_ID = st.secrets["DATABASE_ID"]
 
-CATEGORY_MAP = {
-    "(지출)식비(외식, 배달)": "1faa51bc9fb58124b286f1634c5d1a97",
-    "(지출)주유비": "1faa51bc9fb5811ebfdff4b464945001",
-    "(지출)병원/약국": "1faa51bc9fb581c39ab9f40822b39a99",
-    "(지출)마트": "1fca51bc9fb580daab96d12b589fe108",
-    "(지출)미용": "1fca51bc9fb58030b4efc3565abc89c0",
-    "(지출)쇼핑": "1faa51bc9fb581f1add5fe044c9f427f"
-}
+CATEGORY_MAP = st.secrets["category_map"]
 
-MONTHLY_PLAN_MAP = {
-    "2026.03": "20da51bc9fb580bf8279dddc57770b02",
-    "2026.04": "20da51bc9fb5803baf79f367f3aaf468",
-    "2026.05": "20da51bc9fb580e58af2e58bdee8fce0",
-    "2026.06": "20da51bc9fb58024a09ddeb41f77f3b9",
-    "2026.07": "20da51bc9fb58017b167d57c2adbc571",
-    "2026.08": "20da51bc9fb58076a945efa922315128",
-    "2026.09": "20da51bc9fb580e1a124e8a2318877a8",
-    "2026.10": "20da51bc9fb580038c6edc8802c1997c",
-    "2026.11": "20da51bc9fb580de98eee5183da0e98a",
-    "2026.12": "20da51bc9fb5802d9c83db73a462a6e8",
-    "2027.01": "23ca51bc9fb5808ebaa4ef2577cb13dc",
-    "2027.02": "243a51bc9fb58049bf2adf414b7ce16f",
-    "2027.03": "243a51bc9fb580e89b36ecb9c17ce50f",
-    "2027.04": "243a51bc9fb580648360d83e17683b26",
-    "2027.05": "243a51bc9fb580a09139d365be564524",
-    "2027.06": "243a51bc9fb58004a9a2d3f49f9853d4",
-    "2027.07": "243a51bc9fb580e4a141dba3d10435b0",
-    "2027.08": "243a51bc9fb580439946f110f253f9c7",
-    "2027.09": "243a51bc9fb5806d958ada67c8365070",
-    "2027.10": "243a51bc9fb580209a01e40f0a65053d",
-    "2027.11": "243a51bc9fb580be86a5fed6e5700cf1",
-    "2027.12": "243a51bc9fb580f891aed156afbc8dc2"
-}
+MONTHLY_PLAN_MAP = st.secrets["monthly_plan_map"]
 
-FIXED_REGION_CARD_ID = "30ea51bc9fb580fc8b1bda903842711e"
+FIXED_REGION_CARD_ID = st.secrets["FIXED_REGION_CARD_ID"]
 FIXED_REGION_CARD_NAME = "지역카드 충전"
 INPUT_SOURCE = "Python"
 PAYMENT_METHODS = ["현대카드", "삼성카드", "롯데카드", "지역카드", "계좌이체"]
