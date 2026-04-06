@@ -140,6 +140,13 @@ def fetch_notion_data():
 
 menu = st.sidebar.radio("가계부 메뉴", ["지출내역 등록", "지출내역 조회"])
 
+if menu == "지출내역 조회":
+    if "last_menu" not in st.session_state or st.session_state.last_menu != "지출내역 조회":
+        st.cache_data.clear()  # 노션 데이터 캐시 삭제
+        st.session_state.last_menu = "지출내역 조회"
+else:
+    st.session_state.last_menu = menu
+    
 # --- [메뉴 1: 지출내역 등록] ---
 if menu == "지출내역 등록":
     st.title("📝 지출내역 등록")
