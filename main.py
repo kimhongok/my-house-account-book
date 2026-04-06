@@ -275,12 +275,18 @@ elif menu == "지출내역 조회":
                 filtered_df,
                 column_config={
                     "선택": st.column_config.CheckboxColumn("선택", width=40),
-                    "page_id": None,
-                    "입력경로" : None,
-                    "날짜": st.column_config.DateColumn("날짜", width=90),
-                    "지출": st.column_config.NumberColumn("지출", format="%,d"),
+                    "page_id": None,      # 숨김 처리
+                    "입력경로": None,    # 숨김 처리
+                    "날짜": st.column_config.DateColumn("날짜", width=80, format="YYYY-MM-DD"),
+                    "지출처": st.column_config.TextColumn("지출처", width=200),
+                    "메모": st.column_config.TextColumn("메모", width=200),
+                    "지출": st.column_config.NumberColumn("지출", width=80, format="%,d"),
+                    "카테고리": st.column_config.SelectboxColumn("카테고리", width=180, options=list(CATEGORY_MAP.keys())),
+                    "월별가계부": st.column_config.SelectboxColumn("월별가계부", width=100, options=list(MONTHLY_PLAN_MAP.keys())),
+                    "결제방법": st.column_config.SelectboxColumn("결제방법", width=100, options=PAYMENT_METHODS),
+                    "인원": st.column_config.SelectboxColumn("인원", width=60, options=PERSONNEL),
                 },
-                disabled=["날짜", "지출처", "메모", "지출", "카테고리", "월별가계부", "결제방법", "인원"], # 그리드 직접 수정 방지
+                disabled=["날짜", "지출처", "메모", "지출", "카테고리", "월별가계부", "결제방법", "인원"], # 직접 수정 방지
                 hide_index=True,
                 use_container_width=True,
                 key="view_grid"
