@@ -10,8 +10,6 @@ from html import escape
 
 # 1. 페이지 설정
 st.set_page_config(page_title="H&Y 매니지먼트", layout="wide")
-st.sidebar.markdown("# 🏠 H&Y 매니지먼트")
-st.sidebar.info(f"사용자: {', '.join(PERSONNEL[:2])}") # 유하, 홍옥 출력
 
 # --- [설정 정보] ---
 NOTION_TOKEN = st.secrets["NOTION_TOKEN"]
