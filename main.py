@@ -185,6 +185,10 @@ if menu == "지출내역 등록":
 elif menu == "지출내역 조회":
     st.title("🔍 지출내역 조회")
 
+    if st.button("🔄 데이터 새로고침"):
+        st.cache_resource.clear()
+        st.cache_data.clear()
+        
     # [팝업 함수 정의]
     @st.dialog("📝 선택한 내역 수정")
     def edit_dialog(row_data):
