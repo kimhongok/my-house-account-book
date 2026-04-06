@@ -254,7 +254,8 @@ elif menu == "지출내역 조회":
         selected_pay = c2.selectbox("💳 결제방법", ["전체"] + PAYMENT_METHODS)
         selected_person = c3.selectbox("👥 인원", ["전체"] + PERSONNEL)
 
-        filtered_df = df[(df["입력경로"] == INPUT_SOURCE) & (df["월별가계부"] == selected_month)].copy()
+        # filtered_df = df[(df["입력경로"] == INPUT_SOURCE) & (df["월별가계부"] == selected_month)].copy()
+        filtered_df = df[(df["월별가계부"] == selected_month)].copy()
         if selected_pay != "전체": filtered_df = filtered_df[filtered_df["결제방법"] == selected_pay]
         if selected_person != "전체": filtered_df = filtered_df[filtered_df["인원"] == selected_person]
 
