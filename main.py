@@ -189,11 +189,21 @@ elif menu == "지출내역 조회":
     @st.dialog("📝 선택한 내역 수정")
     def edit_dialog(row_data):
         with st.form("edit_form"):
-            # 달력 자동 열림 방지를 위해 '지출처'를 최상단으로 배치합니다.
-            new_source = st.text_input("📍 지출처", value=row_data["지출처"])
+            # 1. 날짜 표시 방식 변경 (달력 자동 열림 방지 핵심)
+            st.write(f"📅 **현재 설정된 날짜:** {row_data['날짜']}")
+            change_date = st.checkbox("날짜 수정하기")
             
-            # 그 다음 날짜와 나머지 항목들을 배치합니다.
-            new_date = st.date_input("📅 날짜", value=pd.to_datetime(row_data["날짜"]))
+            if change_date:
+                # 체크박스를 눌렀을 때만 달력이 나타남
+                new_date = st.date_input("변경할 날짜 선택", value=pd.to_datetime(row_data["날짜"]))
+            else:
+                # 체크 안 했을 때는 기존 날짜 유지
+                new_date = pd.to_datetime(row_data["날짜"])
+
+            st.divider()
+
+            # 2. 나머지 항목은 순서대로 유지
+            new_source = st.text_input("📍 지출처", value=row_data["지출처"])
             new_expense = st.number_input("💸 지출 금액", value=int(row_data["지출"]), step=100)
             new_category = st.selectbox("📂 카테고리", list(CATEGORY_MAP.keys()), 
                                         index=list(CATEGORY_MAP.keys()).index(row_data["카테고리"]))
