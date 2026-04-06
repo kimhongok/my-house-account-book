@@ -1,0 +1,16 @@
+name: Keep Streamlit App Awake
+
+on:
+  schedule:
+    # 한국 시간 기준 오전 9시, 저녁 9시에 로봇이 접속합니다.
+    - cron: '0 0,12 * * *'
+  workflow_dispatch: # 직접 버튼을 눌러서 실행해볼 수 있게 합니다.
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake up the app
+        # 아래 URL 주소를 홍옥님의 실제 가계부 주소로 꼭 바꿔주세요!
+        run: curl -I "https://my-house-account-book.streamlit.app"
+        
