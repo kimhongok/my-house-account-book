@@ -264,6 +264,9 @@ elif menu == "지출내역 조회":
             m2.metric("총 지출", f"{filtered_df['지출'].sum():,} 원")
 
             # 그리드 출력 (높이를 지정하지 않아 페이지 스크롤 유도)
+            grid_height = (len(filtered_df) + 1) * 35 + 40 
+
+            # 그리드 출력
             edited_df = st.data_editor(
                 filtered_df,
                 column_config={
@@ -282,7 +285,8 @@ elif menu == "지출내역 조회":
                 disabled=["날짜", "지출처", "메모", "지출", "카테고리", "월별가계부", "결제방법", "인원"],
                 hide_index=True,
                 use_container_width=True,
-                key="view_grid"
+                key="view_grid",
+                height=grid_height  # <--- 이 줄을 추가하여 세로 크기를 강제로 늘립니다!
             )
 
             # 체크박스 선택 결과 확인
