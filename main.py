@@ -188,10 +188,18 @@ elif menu == "지출내역 조회":
     # [팝업 함수 정의]
     @st.dialog("📝 선택한 내역 수정")
     def edit_dialog(row_data):
+        # CSS를 통해 key가 'focus_trap'인 입력창을 화면에서 완전히 숨깁니다.
+        st.markdown("""
+            <style>
+                div[data-testid="stForm"] div[data-testid="stTextInput"]:has(input[aria-label="invisible_focus_trap"]) {
+                    display: none;
+                }
+            </style>
+        """, unsafe_allow_html=True)
+
         with st.form("edit_form"):
-            # 1. [보이지 않는 포커스 트랩] 
-            # 빈 라벨(" ")과 매우 짧은 텍스트 입력창을 배치하여 포커스를 먼저 가로챕니다.
-            # 이 항목이 존재함으로써 아래 '날짜'의 달력이 자동으로 열리지 않습니다.
+            # 1. [완벽히 숨겨진 포커스 트랩]
+            # 라벨을 숨기고 CSS로 박스까지 숨겼지만, 브라우저는 여전히 이곳에 먼저 포커스를 줍니다.
             st.text_input(label="invisible_focus_trap", label_visibility="collapsed", key="focus_trap")
 
             # 2. 요청하신 원래 순서 그대로 배치
