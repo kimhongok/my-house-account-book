@@ -9,7 +9,9 @@ import time
 from html import escape
 
 # 1. 페이지 설정
-st.set_page_config(page_title="우리집 가계부", layout="wide")
+st.set_page_config(page_title="H&Y 매니지먼트", layout="wide")
+st.sidebar.markdown("# 🏠 H&Y 매니지먼트")
+st.sidebar.info(f"사용자: {', '.join(PERSONNEL[:2])}") # 유하, 홍옥 출력
 
 # --- [설정 정보] ---
 NOTION_TOKEN = st.secrets["NOTION_TOKEN"]
@@ -138,7 +140,7 @@ def fetch_notion_data():
     return df
 
 
-menu = st.sidebar.radio("가계부 메뉴", ["지출내역 등록", "지출내역 조회"])
+menu = st.sidebar.radio("가계부", ["지출내역 등록", "지출내역 조회"])
 
 if menu == "지출내역 조회":
     if "last_menu" not in st.session_state or st.session_state.last_menu != "지출내역 조회":
@@ -245,7 +247,6 @@ elif menu == "지출내역 조회":
 
     df = fetch_notion_data()
     if not df.empty:
-        st.markdown("### 🎯 필터링")
         c1, c2, c3 = st.columns(3)
         month_options = list(MONTHLY_PLAN_MAP.keys())
         current_month_str = datetime.now().strftime("%Y.%m")
