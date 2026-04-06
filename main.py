@@ -138,7 +138,7 @@ def fetch_notion_data():
     return df
 
 
-menu = st.sidebar.radio("가계부 메뉴", ["지출내역 등록", "지출내역 조회"])
+menu = st.sidebar.radio("가계부", ["지출내역 등록", "지출내역 조회"])
 
 if menu == "지출내역 조회":
     if "last_menu" not in st.session_state or st.session_state.last_menu != "지출내역 조회":
@@ -245,7 +245,7 @@ elif menu == "지출내역 조회":
 
     df = fetch_notion_data()
     if not df.empty:
-        st.markdown("### 🎯 필터링")
+        st.markdown("### 🎯 조회조건")
         c1, c2, c3 = st.columns(3)
         month_options = list(MONTHLY_PLAN_MAP.keys())
         current_month_str = datetime.now().strftime("%Y.%m")
