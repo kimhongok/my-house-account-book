@@ -189,12 +189,14 @@ elif menu == "지출내역 조회":
     @st.dialog("📝 선택한 내역 수정")
     def edit_dialog(row_data):
         with st.form("edit_form"):
-            # 1. 원래 순서 그대로 배치
+            # 1. [보이지 않는 포커스 트랩] 
+            # 빈 라벨(" ")과 매우 짧은 텍스트 입력창을 배치하여 포커스를 먼저 가로챕니다.
+            # 이 항목이 존재함으로써 아래 '날짜'의 달력이 자동으로 열리지 않습니다.
+            st.text_input(label="invisible_focus_trap", label_visibility="collapsed", key="focus_trap")
+
+            # 2. 요청하신 원래 순서 그대로 배치
             new_date = st.date_input("📅 날짜", value=pd.to_datetime(row_data["날짜"]))
-            
-            # 지출처 입력칸에 'target_input'이라는 key를 부여합니다.
-            new_source = st.text_input("📍 지출처", value=row_data["지출처"], key="target_input")
-            
+            new_source = st.text_input("📍 지출처", value=row_data["지출처"])
             new_expense = st.number_input("💸 지출 금액", value=int(row_data["지출"]), step=100)
             new_category = st.selectbox("📂 카테고리", list(CATEGORY_MAP.keys()), 
                                         index=list(CATEGORY_MAP.keys()).index(row_data["카테고리"]))
@@ -204,26 +206,7 @@ elif menu == "지출내역 조회":
                                       index=PERSONNEL.index(row_data["인원"]))
             new_memo = st.text_area("📝 메모", value=row_data["메모"])
             
-            # 2. [자바스크립트 포커스 강제] 
-            # 화면에는 안 보이지만, 렌더링 직후 '지출처' 입력창을 찾아 포커스를 줍니다.
-            st.components.v1.html(
-                """
-                <script>
-                    var inputs = window.parent.document.querySelectorAll('input');
-                    for (var i = 0; i < inputs.length; i++) {
-                        // 입력창의 값이 '지출처' 데이터와 일치하는 요소를 찾아 포커스
-                        if (inputs[i].value === '""" + escape(str(row_data["지출처"])) + """') {
-                            inputs[i].focus();
-                            break;
-                        }
-                    }
-                </script>
-                """,
-                height=0, # 높이를 0으로 설정하여 UI에 영향을 주지 않음
-            )
-
             if st.form_submit_button("💾 수정사항 저장", use_container_width=True):
-                # ... (이하 수정 로직은 기존과 동일하므로 생략)
                 with st.status("업데이트 중..."):
                     p_id = row_data["page_id"]
                     formatted_date = new_date.strftime("%Y-%m-%d")
