@@ -188,11 +188,11 @@ elif menu == "지출내역 조회":
     # [팝업 함수 정의]
     @st.dialog("📝 선택한 내역 수정")
     def edit_dialog(row_data):
-        # 자동 포커스로 인한 달력 열림 방지를 위해 보이지 않는 포커스용 요소 추가
-        st.caption("수정할 내용을 입력해 주세요.") 
-        
         with st.form("edit_form"):
-            # 날짜 앞에 일반 텍스트나 도움말 등을 배치하여 포커스를 분산시킵니다.
+            # 1. 가짜 입력창을 배치하여 포커스를 뺏어옵니다 (달력 열림 방지 핵심)
+            st.text_input("상태", value="수정 모드 활성화됨", disabled=True)
+            
+            # 2. 실제 수정 항목들
             new_date = st.date_input("📅 날짜", value=pd.to_datetime(row_data["날짜"]))
             new_source = st.text_input("📍 지출처", value=row_data["지출처"])
             new_expense = st.number_input("💸 지출 금액", value=int(row_data["지출"]), step=100)
