@@ -276,6 +276,7 @@ elif menu == "지출내역 조회":
                 column_config={
                     "선택": st.column_config.CheckboxColumn("선택", width=40),
                     "page_id": None,
+                    "입력경로" : None,
                     "날짜": st.column_config.DateColumn("날짜", width=90),
                     "지출": st.column_config.NumberColumn("지출", format="%,d"),
                 },
