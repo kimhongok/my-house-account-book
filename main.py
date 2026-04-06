@@ -14,13 +14,17 @@ st.set_page_config(page_title="우리집 가계부", layout="wide")
 # --- [설정 정보] ---
 NOTION_TOKEN = st.secrets["NOTION_TOKEN"]
 DATABASE_ID = st.secrets["DATABASE_ID"]
+
 CATEGORY_MAP = st.secrets["category_map"]
+
 MONTHLY_PLAN_MAP = st.secrets["monthly_plan_map"]
+
 FIXED_REGION_CARD_ID = st.secrets["FIXED_REGION_CARD_ID"]
 FIXED_REGION_CARD_NAME = "지역카드 충전"
 INPUT_SOURCE = "Python"
 PAYMENT_METHODS = ["현대카드", "삼성카드", "롯데카드", "지역카드", "계좌이체"]
 PERSONNEL = ["유하", "홍옥", "공동"]
+
 
 @st.cache_resource
 def get_worksheet():    
@@ -28,19 +32,25 @@ def get_worksheet():
     sh = gc.open("PythonTest")
     return sh.get_worksheet(0)
 
+
 ws = get_worksheet()
 
-# --- [함수: 구글 시트 동기화] ---
+
+# --- [함수: 구글 시트 동기화 - page_id 기반으로 수정] ---
 def sync_gsheet_row(page_id, new_row=None, action="update"):
     try:
         data = ws.get_all_values()
         if not data: return
         rows = data[1:]
         target_idx = -1
+
+        # 시트의 K열(11번째 열)에 저장된 page_id를 검색
         for i, r in enumerate(rows):
+            # r[10]은 시트의 11번째 열(K열)을 의미하며, 여기에 page_id가 저장되어 있음
             if len(r) >= 11 and r[10].strip() == str(page_id).strip():
                 target_idx = i + 2
                 break
+
         if target_idx != -1:
             if action == "update" and new_row is not None:
                 new_memo_val = str(new_row["메모"]).strip() if pd.notna(new_row["메모"]) else ""
@@ -49,14 +59,17 @@ def sync_gsheet_row(page_id, new_row=None, action="update"):
                     int(new_row["지출"]), str(new_row["카테고리"]), str(new_row["월별가계부"]),
                     str(new_row["결제방법"]), str(new_row["인원"]), FIXED_REGION_CARD_NAME, INPUT_SOURCE, page_id
                 ]
+                # 찾은 target_idx 행에 새로운 데이터를 덮어씀
                 ws.update(range_name=f"A{target_idx}:K{target_idx}", values=[update_values])
             elif action == "delete":
                 ws.delete_rows(target_idx)
     except Exception as e:
         st.error(f"❌ 구글 시트 동기화 오류: {e}")
 
+
 def insert_to_notion(date, source, memo, expense, category_id, month_id, payment, person):
-    headers = {"Authorization": f"Bearer {NOTION_TOKEN}", "Content-Type": "application/json", "Notion-Version": "2022-06-28"}
+    headers = {"Authorization": f"Bearer {NOTION_TOKEN}", "Content-Type": "application/json",
+               "Notion-Version": "2022-06-28"}
     memo_val = str(memo).strip() if memo and pd.notna(memo) else ""
     properties = {
         "날짜": {"date": {"start": str(date)}},
@@ -73,22 +86,27 @@ def insert_to_notion(date, source, memo, expense, category_id, month_id, payment
     data = {"parent": {"database_id": DATABASE_ID}, "properties": properties}
     return requests.post("https://api.notion.com/v1/pages", headers=headers, json=data)
 
+
 def delete_notion_page(page_id):
     url = f"https://api.notion.com/v1/pages/{page_id}"
     headers = {"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28"}
     return requests.patch(url, headers=headers, json={"archived": True})
 
+
 def update_notion_page(page_id, updated_properties):
     url = f"https://api.notion.com/v1/pages/{page_id}"
-    headers = {"Authorization": f"Bearer {NOTION_TOKEN}", "Content-Type": "application/json", "Notion-Version": "2022-06-28"}
+    headers = {"Authorization": f"Bearer {NOTION_TOKEN}", "Content-Type": "application/json",
+               "Notion-Version": "2022-06-28"}
     return requests.patch(url, headers=headers, json={"properties": updated_properties})
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600) # 10분 동안은 API 호출 없이 캐시된 데이터를 사용
 def fetch_notion_data():
     url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
-    headers = {"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28", "Content-Type": "application/json"}
+    headers = {"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28",
+               "Content-Type": "application/json"}
     payload = {"sorts": [{"timestamp": "created_time", "direction": "descending"}]}
     res = requests.post(url, headers=headers, json=payload)
+
     if res.status_code != 200: return pd.DataFrame()
     all_pages = res.json().get("results", [])
     inv_cat = {v.replace("-", ""): k for k, v in CATEGORY_MAP.items()}
@@ -112,21 +130,23 @@ def fetch_notion_data():
                 "입력경로": p.get("입력경로", {}).get("select", {}).get("name", "") if p.get("입력경로", {}).get("select") else "",
                 "메모": p.get("메모", {}).get("rich_text", [{}])[0].get("text", {}).get("content", "") if p.get("메모",{}).get("rich_text") else ""
             })
-        except: continue
+        except:
+            continue
     df = pd.DataFrame(rows)
     if not df.empty:
         df = df.sort_values(by=["날짜"], ascending=[True]).reset_index(drop=True)
     return df
 
-menu = st.sidebar.radio("가계부", ["지출내역 등록", "지출내역 조회"])
+
+menu = st.sidebar.radio("가계부 메뉴", ["지출내역 등록", "지출내역 조회"])
 
 if menu == "지출내역 조회":
     if "last_menu" not in st.session_state or st.session_state.last_menu != "지출내역 조회":
-        st.cache_data.clear()
+        st.cache_data.clear()  # 노션 데이터 캐시 삭제
         st.session_state.last_menu = "지출내역 조회"
 else:
     st.session_state.last_menu = menu
-
+    
 # --- [메뉴 1: 지출내역 등록] ---
 if menu == "지출내역 등록":
     st.title("📝 지출내역 등록")
@@ -152,13 +172,18 @@ if menu == "지출내역 등록":
                 st.error("❌ 입력값을 확인해주세요.")
             else:
                 with st.status("데이터 전송 중..."):
+                    # 노션 저장 후 생성된 ID 받아오기
                     res = insert_to_notion(input_date.strftime("%Y-%m-%d"), source, memo, int(expense_raw),
                                            CATEGORY_MAP[selected_category], MONTHLY_PLAN_MAP[calc_month_str],
                                            selected_payment, selected_person)
+
                     new_page_id = res.json().get("id") if res.status_code == 200 else ""
+
+                    # 구글 시트에 page_id를 포함하여 저장 (K열)
                     ws.append_row([input_date.strftime("%Y-%m-%d"), source, memo, int(expense_raw), selected_category,
                                    calc_month_str, selected_payment, selected_person, FIXED_REGION_CARD_NAME,
                                    INPUT_SOURCE, new_page_id])
+
                     st.session_state.form_key += 1
                     st.session_state.show_success_balloons = True
                     st.rerun()
@@ -171,10 +196,14 @@ elif menu == "지출내역 조회":
         st.cache_resource.clear()
         st.cache_data.clear()
         
+    # [팝업 함수 정의]
     @st.dialog("📝 선택한 내역 수정")
     def edit_dialog(row_data):
         with st.form("edit_form"):
+            # 달력 자동 열림 방지를 위해 '지출처'를 최상단으로 배치합니다.
             new_source = st.text_input("📍 지출처", value=row_data["지출처"])
+            
+            # 그 다음 날짜와 나머지 항목들을 배치합니다.
             new_date = st.date_input("📅 날짜", value=pd.to_datetime(row_data["날짜"]))
             new_expense = st.number_input("💸 지출 금액", value=int(row_data["지출"]), step=100)
             new_category = st.selectbox("📂 카테고리", list(CATEGORY_MAP.keys()), 
@@ -190,6 +219,7 @@ elif menu == "지출내역 조회":
                     p_id = row_data["page_id"]
                     formatted_date = new_date.strftime("%Y-%m-%d")
                     calc_month_str = new_date.strftime("%Y.%m")
+                    
                     update_props = {
                         "수입/지출처": {"title": [{"text": {"content": str(new_source)}}]},
                         "지출": {"number": int(new_expense)},
@@ -201,20 +231,21 @@ elif menu == "지출내역 조회":
                         "날짜": {"date": {"start": formatted_date}}
                     }
                     update_notion_page(p_id, update_props)
+                    
                     new_row_for_sheet = {
                         "날짜": formatted_date, "지출처": new_source, "메모": new_memo,
                         "지출": new_expense, "카테고리": new_category,
                         "월별가계부": calc_month_str, "결제방법": new_payment, "인원": new_person
                     }
                     sync_gsheet_row(p_id, new_row=new_row_for_sheet, action="update")
+                    
                 st.success("✅ 수정 완료!")
                 st.cache_data.clear()
                 st.rerun()
 
     df = fetch_notion_data()
     if not df.empty:
-        # 조회 필터 영역
-        st.markdown("### 🎯 조회조건")
+        st.markdown("### 🎯 필터링")
         c1, c2, c3 = st.columns(3)
         month_options = list(MONTHLY_PLAN_MAP.keys())
         current_month_str = datetime.now().strftime("%Y.%m")
@@ -224,60 +255,28 @@ elif menu == "지출내역 조회":
         selected_pay = c2.selectbox("💳 결제방법", ["전체"] + PAYMENT_METHODS)
         selected_person = c3.selectbox("👥 인원", ["전체"] + PERSONNEL)
 
-        filtered_df = df[df["월별가계부"] == selected_month].copy()
+        filtered_df = df[(df["입력경로"] == INPUT_SOURCE) & (df["월별가계부"] == selected_month)].copy()
         if selected_pay != "전체": filtered_df = filtered_df[filtered_df["결제방법"] == selected_pay]
         if selected_person != "전체": filtered_df = filtered_df[filtered_df["인원"] == selected_person]
 
         if not filtered_df.empty:
             filtered_df["날짜"] = pd.to_datetime(filtered_df["날짜"]).dt.date
+            
+            # [기존 UI 복구] '선택' 컬럼 추가 (삭제 대신 선택으로 활용 가능)
             filtered_df.insert(0, "선택", False)
             
             st.divider()
-
-            # --- [CSS 수정: 버튼 영역 고정 및 그리드 컨테이너 최적화] ---
-            st.markdown("""
-                <style>
-                    /* 1. 버튼 영역 상단 고정 */
-                    div[data-testid="stVerticalBlock"] > div:has(div.fixed-header) {
-                        position: sticky;
-                        top: 2.85rem; /* 스트림릿 기본 헤더 높이에 맞춤 */
-                        background-color: white;
-                        z-index: 1000;
-                        padding: 10px 0;
-                        border-bottom: 2px solid #f0f2f6;
-                    }
-                    
-                    /* 2. 그리드 내부의 헤더는 st.data_editor가 알아서 고정해줍니다. 
-                       핵심은 그리드의 전체 높이를 '적절히' 설정하는 것입니다. */
-
-                    @media (prefers-color-scheme: dark) {
-                        div[data-testid="stVerticalBlock"] > div:has(div.fixed-header) {
-                            background-color: #0e1117;
-                            border-bottom: 2px solid #262730;
-                        }
-                    }
-                </style>
-            """, unsafe_allow_html=True)
-
-            # 버튼이 들어갈 공간
-            button_space = st.container()
-
-            # 지표 표시
             m1, m2 = st.columns(2)
             m1.metric("건수", f"{len(filtered_df)} 건")
             m2.metric("총 지출", f"{filtered_df['지출'].sum():,} 원")
 
-            # --- [핵심 변경 포인트] ---
-            # height를 너무 크게 주면 브라우저 스크롤이 생기고, 너무 작으면 답답합니다.
-            # '600' 정도의 고정 높이를 주면, st.data_editor는 헤더를 상단에 고정시킨 채
-            # 내부 데이터만 스크롤하게 만드는 기능을 기본적으로 제공합니다.
-            
+            # 기존과 동일한 st.data_editor 사용 (단, 수정 불가한 조회 전용 모드 권장)
             edited_df = st.data_editor(
                 filtered_df,
                 column_config={
                     "선택": st.column_config.CheckboxColumn("선택", width=40),
-                    "page_id": None,
-                    "입력경로": None,
+                    "page_id": None,      # 숨김 처리
+                    "입력경로": None,    # 숨김 처리
                     "날짜": st.column_config.DateColumn("날짜", width=80, format="YYYY-MM-DD"),
                     "지출처": st.column_config.TextColumn("지출처", width=200),
                     "메모": st.column_config.TextColumn("메모", width=200),
@@ -287,32 +286,34 @@ elif menu == "지출내역 조회":
                     "결제방법": st.column_config.SelectboxColumn("결제방법", width=100, options=PAYMENT_METHODS),
                     "인원": st.column_config.SelectboxColumn("인원", width=60, options=PERSONNEL),
                 },
-                disabled=["날짜", "지출처", "메모", "지출", "카테고리", "월별가계부", "결제방법", "인원"],
+                disabled=["날짜", "지출처", "메모", "지출", "카테고리", "월별가계부", "결제방법", "인원"], # 직접 수정 방지
                 hide_index=True,
                 use_container_width=True,
-                key="view_grid",
-                height=600 # <--- 높이를 고정하면 헤더가 자동으로 고정됩니다!
+                key="view_grid"
             )
 
-            # 선택된 행 확인 및 버튼 렌더링 (기존과 동일)
+            # [핵심 로직] 체크박스가 선택된 행이 있는지 확인
             selected_rows = edited_df[edited_df["선택"] == True]
-            with button_space:
-                st.markdown('<div class="fixed-header"></div>', unsafe_allow_html=True)
-                if len(selected_rows) > 0:
-                    st.info(f"💡 {len(selected_rows)}개의 항목이 선택되었습니다.")
-                    col_btn1, col_btn2 = st.columns(2)
-                    if len(selected_rows) == 1:
-                        if col_btn1.button("📝 선택 항목 수정하기", type="primary", use_container_width=True):
-                            edit_dialog(selected_rows.iloc[0])
-                    if col_btn2.button("🗑️ 선택 항목 삭제하기", use_container_width=True):
-                        with st.status("삭제 중..."):
-                            for _, d_row in selected_rows.iterrows():
-                                p_id = d_row["page_id"]
-                                delete_notion_page(p_id)
-                                sync_gsheet_row(p_id, action="delete")
-                        st.success("삭제되었습니다.")
-                        st.cache_data.clear()
-                        st.rerun()
+            
+            if len(selected_rows) > 0:
+                st.info(f"💡 {len(selected_rows)}개의 항목이 선택되었습니다.")
+                col_btn1, col_btn2 = st.columns(2)
+                
+                # 하나만 선택했을 때 '수정 팝업' 버튼 활성화
+                if len(selected_rows) == 1:
+                    if col_btn1.button("📝 선택 항목 수정하기", type="primary", use_container_width=True):
+                        edit_dialog(selected_rows.iloc[0])
+                
+                # 삭제 버튼
+                if col_btn2.button("🗑️ 선택 항목 삭제하기", use_container_width=True):
+                    with st.status("삭제 중..."):
+                        for _, d_row in selected_rows.iterrows():
+                            p_id = d_row["page_id"]
+                            delete_notion_page(p_id)
+                            sync_gsheet_row(p_id, action="delete")
+                    st.success("삭제되었습니다.")
+                    st.cache_data.clear()
+                    st.rerun()
         else:
             st.warning("해당 월의 데이터가 없습니다.")
     else:
