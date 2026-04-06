@@ -245,7 +245,6 @@ elif menu == "지출내역 조회":
 
     df = fetch_notion_data()
     if not df.empty:
-        st.markdown("### 🎯 조회조건")
         c1, c2, c3 = st.columns(3)
         month_options = list(MONTHLY_PLAN_MAP.keys())
         current_month_str = datetime.now().strftime("%Y.%m")
