@@ -99,7 +99,7 @@ def update_notion_page(page_id, updated_properties):
                "Notion-Version": "2022-06-28"}
     return requests.patch(url, headers=headers, json={"properties": updated_properties})
 
-
+@st.cache_data(ttl=600) # 10분 동안은 API 호출 없이 캐시된 데이터를 사용
 def fetch_notion_data():
     url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
     headers = {"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28",
