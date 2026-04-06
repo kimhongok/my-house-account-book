@@ -189,12 +189,11 @@ elif menu == "지출내역 조회":
     @st.dialog("📝 선택한 내역 수정")
     def edit_dialog(row_data):
         with st.form("edit_form"):
-            # 1. 가짜 입력창을 배치하여 포커스를 뺏어옵니다 (달력 열림 방지 핵심)
-            st.text_input("상태", value="수정 모드 활성화됨", disabled=True)
-            
-            # 2. 실제 수정 항목들
-            new_date = st.date_input("📅 날짜", value=pd.to_datetime(row_data["날짜"]))
+            # 달력 자동 열림 방지를 위해 '지출처'를 최상단으로 배치합니다.
             new_source = st.text_input("📍 지출처", value=row_data["지출처"])
+            
+            # 그 다음 날짜와 나머지 항목들을 배치합니다.
+            new_date = st.date_input("📅 날짜", value=pd.to_datetime(row_data["날짜"]))
             new_expense = st.number_input("💸 지출 금액", value=int(row_data["지출"]), step=100)
             new_category = st.selectbox("📂 카테고리", list(CATEGORY_MAP.keys()), 
                                         index=list(CATEGORY_MAP.keys()).index(row_data["카테고리"]))
@@ -232,10 +231,6 @@ elif menu == "지출내역 조회":
                 st.success("✅ 수정 완료!")
                 st.cache_data.clear()
                 st.rerun()
-
-    if st.button("🔄 데이터 새로고침"):
-        st.cache_data.clear()
-        st.rerun()
 
     df = fetch_notion_data()
     if not df.empty:
