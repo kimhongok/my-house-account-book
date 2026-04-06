@@ -234,39 +234,44 @@ elif menu == "지출내역 조회":
             
             st.divider()
 
-            # --- [핵심 수정: 상단 고정 CSS 추가] ---
+            # --- [CSS 수정: 버튼 영역 고정 및 그리드 컨테이너 최적화] ---
             st.markdown("""
                 <style>
-                    /* 버튼과 상태창이 있는 컨테이너 고정 */
+                    /* 1. 버튼 영역 상단 고정 */
                     div[data-testid="stVerticalBlock"] > div:has(div.fixed-header) {
                         position: sticky;
-                        top: 2.8rem;
+                        top: 2.85rem; /* 스트림릿 기본 헤더 높이에 맞춤 */
                         background-color: white;
-                        z-index: 999;
+                        z-index: 1000;
                         padding: 10px 0;
-                        border-bottom: 1px solid #ddd;
+                        border-bottom: 2px solid #f0f2f6;
                     }
-                    /* 다크모드 배경 대응 */
+                    
+                    /* 2. 그리드 내부의 헤더는 st.data_editor가 알아서 고정해줍니다. 
+                       핵심은 그리드의 전체 높이를 '적절히' 설정하는 것입니다. */
+
                     @media (prefers-color-scheme: dark) {
                         div[data-testid="stVerticalBlock"] > div:has(div.fixed-header) {
                             background-color: #0e1117;
-                            border-bottom: 1px solid #333;
+                            border-bottom: 2px solid #262730;
                         }
                     }
                 </style>
             """, unsafe_allow_html=True)
 
-            # --- [핵심 수정: 버튼 영역을 그리드보다 먼저 배치] ---
+            # 버튼이 들어갈 공간
             button_space = st.container()
 
+            # 지표 표시
             m1, m2 = st.columns(2)
             m1.metric("건수", f"{len(filtered_df)} 건")
             m2.metric("총 지출", f"{filtered_df['지출'].sum():,} 원")
 
-            # 그리드 출력 (높이를 지정하지 않아 페이지 스크롤 유도)
-            grid_height = (len(filtered_df) + 1) * 35 + 40 
-
-            # 그리드 출력
+            # --- [핵심 변경 포인트] ---
+            # height를 너무 크게 주면 브라우저 스크롤이 생기고, 너무 작으면 답답합니다.
+            # '600' 정도의 고정 높이를 주면, st.data_editor는 헤더를 상단에 고정시킨 채
+            # 내부 데이터만 스크롤하게 만드는 기능을 기본적으로 제공합니다.
+            
             edited_df = st.data_editor(
                 filtered_df,
                 column_config={
@@ -286,24 +291,19 @@ elif menu == "지출내역 조회":
                 hide_index=True,
                 use_container_width=True,
                 key="view_grid",
-                height=grid_height  # <--- 이 줄을 추가하여 세로 크기를 강제로 늘립니다!
+                height=600 # <--- 높이를 고정하면 헤더가 자동으로 고정됩니다!
             )
 
-            # 체크박스 선택 결과 확인
+            # 선택된 행 확인 및 버튼 렌더링 (기존과 동일)
             selected_rows = edited_df[edited_df["선택"] == True]
-            
-            # --- [상단 고정 컨테이너 내부 렌더링] ---
             with button_space:
-                # CSS 타겟팅을 위한 마커
                 st.markdown('<div class="fixed-header"></div>', unsafe_allow_html=True)
                 if len(selected_rows) > 0:
                     st.info(f"💡 {len(selected_rows)}개의 항목이 선택되었습니다.")
                     col_btn1, col_btn2 = st.columns(2)
-                    
                     if len(selected_rows) == 1:
                         if col_btn1.button("📝 선택 항목 수정하기", type="primary", use_container_width=True):
                             edit_dialog(selected_rows.iloc[0])
-                    
                     if col_btn2.button("🗑️ 선택 항목 삭제하기", use_container_width=True):
                         with st.status("삭제 중..."):
                             for _, d_row in selected_rows.iterrows():
