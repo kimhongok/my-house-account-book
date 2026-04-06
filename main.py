@@ -138,7 +138,7 @@ def fetch_notion_data():
     return df
 
 
-menu = st.sidebar.radio("메뉴", ["지출내역 등록", "지출내역 조회"])
+menu = st.sidebar.radio("가계부 메뉴", ["지출내역 등록", "지출내역 조회"])
 
 # --- [메뉴 1: 지출내역 등록] ---
 if menu == "지출내역 등록":
