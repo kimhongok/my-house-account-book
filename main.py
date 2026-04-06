@@ -188,23 +188,12 @@ elif menu == "지출내역 조회":
     # [팝업 함수 정의]
     @st.dialog("📝 선택한 내역 수정")
     def edit_dialog(row_data):
-        # CSS를 통해 key가 'focus_trap'인 입력창을 화면에서 완전히 숨깁니다.
-        st.markdown("""
-            <style>
-                div[data-testid="stForm"] div[data-testid="stTextInput"]:has(input[aria-label="invisible_focus_trap"]) {
-                    display: none;
-                }
-            </style>
-        """, unsafe_allow_html=True)
-
         with st.form("edit_form"):
-            # 1. [완벽히 숨겨진 포커스 트랩]
-            # 라벨을 숨기고 CSS로 박스까지 숨겼지만, 브라우저는 여전히 이곳에 먼저 포커스를 줍니다.
-            st.text_input(label="invisible_focus_trap", label_visibility="collapsed", key="focus_trap")
-
-            # 2. 요청하신 원래 순서 그대로 배치
-            new_date = st.date_input("📅 날짜", value=pd.to_datetime(row_data["날짜"]))
+            # 달력 자동 열림 방지를 위해 '지출처'를 최상단으로 배치합니다.
             new_source = st.text_input("📍 지출처", value=row_data["지출처"])
+            
+            # 그 다음 날짜와 나머지 항목들을 배치합니다.
+            new_date = st.date_input("📅 날짜", value=pd.to_datetime(row_data["날짜"]))
             new_expense = st.number_input("💸 지출 금액", value=int(row_data["지출"]), step=100)
             new_category = st.selectbox("📂 카테고리", list(CATEGORY_MAP.keys()), 
                                         index=list(CATEGORY_MAP.keys()).index(row_data["카테고리"]))
