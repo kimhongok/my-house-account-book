@@ -184,12 +184,10 @@ if menu == "지출내역 등록":
 # --- [메뉴 2: 지출내역 조회] ---
 elif menu == "지출내역 조회":
     st.title("🔍 지출내역 조회")
-    
-    # [추가] 수정 팝업 함수 (st.dialog)
-    @st.dialog("📝 지출내역 수정")
+
+    # [팝업 함수 정의]
+    @st.dialog("📝 선택한 내역 수정")
     def edit_dialog(row_data):
-        st.write(f"**ID:** {row_data['page_id']}")
-        
         with st.form("edit_form"):
             new_date = st.date_input("📅 날짜", value=pd.to_datetime(row_data["날짜"]))
             new_source = st.text_input("📍 지출처", value=row_data["지출처"])
@@ -202,15 +200,12 @@ elif menu == "지출내역 조회":
                                       index=PERSONNEL.index(row_data["인원"]))
             new_memo = st.text_area("📝 메모", value=row_data["메모"])
             
-            submit = st.form_submit_button("💾 수정사항 저장", use_container_width=True)
-            
-            if submit:
+            if st.form_submit_button("💾 수정사항 저장", use_container_width=True):
                 with st.status("업데이트 중..."):
                     p_id = row_data["page_id"]
                     formatted_date = new_date.strftime("%Y-%m-%d")
                     calc_month_str = new_date.strftime("%Y.%m")
                     
-                    # 노션 업데이트용 프로퍼티
                     update_props = {
                         "수입/지출처": {"title": [{"text": {"content": str(new_source)}}]},
                         "지출": {"number": int(new_expense)},
@@ -221,30 +216,20 @@ elif menu == "지출내역 조회":
                         "월별가계부": {"relation": [{"id": MONTHLY_PLAN_MAP.get(calc_month_str)}]},
                         "날짜": {"date": {"start": formatted_date}}
                     }
-                    
-                    # 1. 노션 업데이트
                     update_notion_page(p_id, update_props)
                     
-                    # 2. 구글 시트 업데이트용 데이터 구성
                     new_row_for_sheet = {
-                        "날짜": formatted_date,
-                        "지출처": new_source,
-                        "메모": new_memo,
-                        "지출": new_expense,
-                        "카테고리": new_category,
-                        "월별가계부": calc_month_str,
-                        "결제방법": new_payment,
-                        "인원": new_person
+                        "날짜": formatted_date, "지출처": new_source, "메모": new_memo,
+                        "지출": new_expense, "카테고리": new_category,
+                        "월별가계부": calc_month_str, "결제방법": new_payment, "인원": new_person
                     }
                     sync_gsheet_row(p_id, new_row=new_row_for_sheet, action="update")
                     
-                st.success("✅ 수정되었습니다!")
-                time.sleep(1)
+                st.success("✅ 수정 완료!")
                 st.cache_data.clear()
                 st.rerun()
 
     if st.button("🔄 데이터 새로고침"):
-        st.cache_resource.clear()
         st.cache_data.clear()
         st.rerun()
 
@@ -252,20 +237,13 @@ elif menu == "지출내역 조회":
     if not df.empty:
         st.markdown("### 🎯 필터링")
         c1, c2, c3 = st.columns(3)
-
-        current_month_str = datetime.now().strftime("%Y.%m")
         month_options = list(MONTHLY_PLAN_MAP.keys())
-        try:
-            default_month_idx = month_options.index(current_month_str)
-        except ValueError:
-            default_month_idx = 0
+        current_month_str = datetime.now().strftime("%Y.%m")
+        default_month_idx = month_options.index(current_month_str) if current_month_str in month_options else 0
 
-        with c1:
-            selected_month = st.selectbox("📅 조회 월", month_options, index=default_month_idx)
-        with c2:
-            selected_pay = st.selectbox("💳 결제방법", ["전체"] + PAYMENT_METHODS)
-        with c3:
-            selected_person = st.selectbox("👥 인원", ["전체"] + PERSONNEL)
+        selected_month = c1.selectbox("📅 조회 월", month_options, index=default_month_idx)
+        selected_pay = c2.selectbox("💳 결제방법", ["전체"] + PAYMENT_METHODS)
+        selected_person = c3.selectbox("👥 인원", ["전체"] + PERSONNEL)
 
         filtered_df = df[(df["입력경로"] == INPUT_SOURCE) & (df["월별가계부"] == selected_month)].copy()
         if selected_pay != "전체": filtered_df = filtered_df[filtered_df["결제방법"] == selected_pay]
@@ -274,32 +252,51 @@ elif menu == "지출내역 조회":
         if not filtered_df.empty:
             filtered_df["날짜"] = pd.to_datetime(filtered_df["날짜"]).dt.date
             
+            # [기존 UI 복구] '선택' 컬럼 추가 (삭제 대신 선택으로 활용 가능)
+            filtered_df.insert(0, "선택", False)
+            
             st.divider()
             m1, m2 = st.columns(2)
             m1.metric("건수", f"{len(filtered_df)} 건")
             m2.metric("총 지출", f"{filtered_df['지출'].sum():,} 원")
 
-            # --- [수정된 그리드 영역] ---
-            # 헤더 출력
-            cols = st.columns([1, 2, 2, 3, 2, 1]) # 너비 비율 조정
-            fields = ["관리", "날짜", "지출처", "메모", "지출", "카테고리"]
-            for col, field in zip(cols, fields):
-                col.write(f"**{field}**")
+            # 기존과 동일한 st.data_editor 사용 (단, 수정 불가한 조회 전용 모드 권장)
+            edited_df = st.data_editor(
+                filtered_df,
+                column_config={
+                    "선택": st.column_config.CheckboxColumn("선택", width=40),
+                    "page_id": None,
+                    "날짜": st.column_config.DateColumn("날짜", width=90),
+                    "지출": st.column_config.NumberColumn("지출", format="%,d"),
+                },
+                disabled=["날짜", "지출처", "메모", "지출", "카테고리", "월별가계부", "결제방법", "인원"], # 그리드 직접 수정 방지
+                hide_index=True,
+                use_container_width=True,
+                key="view_grid"
+            )
 
-            # 데이터 행 반복
-            for idx, row in filtered_df.iterrows():
-                with st.container():
-                    c1, c2, c3, c4, c5, c6 = st.columns([1, 2, 2, 3, 2, 1])
-                    # 수정 버튼
-                    if c1.button("📝", key=f"edit_{row['page_id']}"):
-                        edit_dialog(row)
-                    
-                    c2.write(row["날짜"])
-                    c3.write(row["지출처"])
-                    c4.write(row["메모"])
-                    c5.write(f"{row['지출']:,}원")
-                    c6.write(row["카테고리"])
-            # --------------------------
+            # [핵심 로직] 체크박스가 선택된 행이 있는지 확인
+            selected_rows = edited_df[edited_df["선택"] == True]
+            
+            if len(selected_rows) > 0:
+                st.info(f"💡 {len(selected_rows)}개의 항목이 선택되었습니다.")
+                col_btn1, col_btn2 = st.columns(2)
+                
+                # 하나만 선택했을 때 '수정 팝업' 버튼 활성화
+                if len(selected_rows) == 1:
+                    if col_btn1.button("📝 선택 항목 수정하기", type="primary", use_container_width=True):
+                        edit_dialog(selected_rows.iloc[0])
+                
+                # 삭제 버튼
+                if col_btn2.button("🗑️ 선택 항목 삭제하기", use_container_width=True):
+                    with st.status("삭제 중..."):
+                        for _, d_row in selected_rows.iterrows():
+                            p_id = d_row["page_id"]
+                            delete_notion_page(p_id)
+                            sync_gsheet_row(p_id, action="delete")
+                    st.success("삭제되었습니다.")
+                    st.cache_data.clear()
+                    st.rerun()
         else:
             st.warning("해당 월의 데이터가 없습니다.")
     else:
